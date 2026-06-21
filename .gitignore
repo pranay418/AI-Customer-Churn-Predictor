@@ -1,0 +1,16 @@
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Data and binary files
+WA_Fn-UseC_-Telco-Customer-Churn.csv
+model.joblib
+
+# Streamlit config
+.streamlit/
