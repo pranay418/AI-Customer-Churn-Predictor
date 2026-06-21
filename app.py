@@ -14,60 +14,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for high-end premium dashboard aesthetics
+# Custom CSS for modern premium dashboard aesthetics
 st.markdown("""
 <style>
     /* Gradient Background and general page styling */
     .stApp {
-        background-color: #0B0F19 !important;
-        color: #F3F4F6 !important;
-    }
-    
-    /* Enforce dark theme properties for all standard texts & labels */
-    [data-testid="stWidgetLabel"] p, .stApp label, .stApp p, .stApp span {
-        color: #E5E7EB !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Input selectbox, number input, and text areas readability */
-    div[data-baseweb="select"] div, input, select, textarea {
-        color: #FFFFFF !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Custom style for Select boxes */
-    div[data-baseweb="select"] {
-        background-color: #162032 !important;
-        border-radius: 8px !important;
-        border: 1px solid #233554 !important;
-    }
-    
-    /* Make the sliders look gorgeous */
-    .stSlider > div [data-baseweb="slider"] {
-        background-color: #1e293b !important;
-    }
-    .stSlider > div [role="slider"] {
-        background-color: #3b82f6 !important;
-        border: 2px solid #ffffff !important;
-    }
-    
-    /* Sidebar text styling */
-    section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
-        color: #F3F4F6 !important;
-        font-weight: 600 !important;
-    }
-    section[data-testid="stSidebar"] h4 {
-        color: #FFFFFF !important;
-    }
-    section[data-testid="stSidebar"] {
-        background-color: #0D1527 !important;
-        border-right: 1px solid #1E2D4A !important;
+        background-color: #0B0F19;
+        color: #F3F4F6;
     }
     
     /* Metrics panel custom container */
     div[data-testid="metric-container"] {
-        background-color: #131E35 !important;
-        border: 1px solid #233554 !important;
+        background-color: #162032;
+        border: 1px solid #233554;
         border-radius: 12px;
         padding: 18px 24px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -75,45 +34,31 @@ st.markdown("""
     }
     div[data-testid="metric-container"]:hover {
         transform: translateY(-2px);
-        border-color: #3b82f6 !important;
+        border-color: #3b82f6;
     }
     
-    /* Transform Streamlit containers with border=True into premium interactive cards */
-    div[data-testid="stVerticalBlockBorderContainer"] {
-        background: linear-gradient(135deg, #121C30 0%, #0C1424 100%) !important;
-        border: 1px solid #1E2E4A !important;
-        border-radius: 16px !important;
-        padding: 24px !important;
-        margin-bottom: 20px !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-        transition: all 0.3s ease-in-out !important;
-    }
-    div[data-testid="stVerticalBlockBorderContainer"]:hover {
-        transform: translateY(-3px) !important;
-        border-color: #3B82F6 !important;
-        box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2) !important;
-    }
-    
-    /* Headers gradient styling */
+    /* Headers and labels styling */
     h1, h2, h3 {
-        font-family: 'Outfit', 'Inter', sans-serif;
+        font-family: 'Inter', sans-serif;
         font-weight: 700;
         background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
-        color: #FFFFFF !important;
+    
+    /* Cards and boxes styling */
+    .dashboard-card {
+        background-color: #111A2E;
+        border: 1px solid #1E2D4A;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
     }
     
-    /* Tabs selection styling */
-    button[data-baseweb="tab"] p {
-        color: #9CA3AF !important;
-        font-size: 1.05rem !important;
-    }
-    button[aria-selected="true"][data-baseweb="tab"] p {
-        color: #3B82F6 !important;
-        font-weight: 700 !important;
+    /* Sidebar custom style */
+    section[data-testid="stSidebar"] {
+        background-color: #0D1527;
+        border-right: 1px solid #1E2D4A;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -221,6 +166,7 @@ else:
 # Financials Section
 st.sidebar.markdown("---")
 st.sidebar.markdown("#### **Financials**")
+# Restrict Monthly Charges slider according to selected internet option for realism
 min_c, max_c, val_c = 18.0, 120.0, 70.0
 if input_data['InternetService'] == 'No':
     max_c = 30.0
@@ -233,6 +179,8 @@ else: # Fiber optic
     val_c = 90.0
 
 input_data['MonthlyCharges'] = st.sidebar.slider("Monthly Charges ($)", min_value=float(min_c), max_value=float(max_c), value=float(val_c))
+
+# Automatically calculate TotalCharges as tenure * MonthlyCharges, but allow custom overrides
 total_calculated = input_data['MonthlyCharges'] * input_data['tenure']
 input_data['TotalCharges'] = st.sidebar.number_input("Total Charges ($)", min_value=0.0, value=float(total_calculated), step=50.0)
 
@@ -251,119 +199,132 @@ with tab1:
     col1, col2 = st.columns([1, 1.2])
     
     with col1:
-        with st.container(border=True):
-            st.subheader("Churn Probability Meter")
-            
-            # Plot Gauge Chart
-            fig_gauge = go.Figure(go.Indicator(
-                mode = "gauge+number",
-                value = prediction_prob * 100,
-                domain = {'x': [0, 1], 'y': [0, 1]},
-                title = {'text': "Probability of Unsubscribing", 'font': {'size': 18, 'color': '#F3F4F6'}},
-                gauge = {
-                    'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "#F3F4F6"},
-                    'bar': {'color': "#EF4444" if prediction_prob > 0.5 else "#F59E0B" if prediction_prob > 0.25 else "#10B981"},
-                    'bgcolor': "#162032",
-                    'borderwidth': 2,
-                    'bordercolor': "#233554",
-                    'steps': [
-                        {'range': [0, 25], 'color': '#064e3b'},
-                        {'range': [25, 50], 'color': '#78350f'},
-                        {'range': [50, 100], 'color': '#7f1d1d'}
-                    ],
-                }
-            ))
-            fig_gauge.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font={'color': "#F3F4F6", 'family': "Inter"},
-                height=280,
-                margin=dict(l=20, r=20, t=40, b=20)
-            )
-            st.plotly_chart(fig_gauge, use_container_width=True)
-            
-            # Risk Badge
-            if prediction_prob > 0.5:
-                st.error("🚨 **Classification: HIGH RISK OF CHURN**")
-            elif prediction_prob > 0.25:
-                st.warning("⚠️ **Classification: MEDIUM RISK OF CHURN**")
-            else:
-                st.success("✅ **Classification: LOW RISK OF CHURN (Healthy)**")
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("Churn Probability Meter")
         
-        with st.container(border=True):
-            st.subheader("💡 Key Risk Factors & Recommendations")
+        # Plot Gauge Chart
+        fig_gauge = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = prediction_prob * 100,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "Probability of Unsubscribing", 'font': {'size': 18, 'color': '#F3F4F6'}},
+            gauge = {
+                'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "#F3F4F6"},
+                'bar': {'color': "#EF4444" if prediction_prob > 0.5 else "#F59E0B" if prediction_prob > 0.25 else "#10B981"},
+                'bgcolor': "#162032",
+                'borderwidth': 2,
+                'bordercolor': "#233554",
+                'steps': [
+                    {'range': [0, 25], 'color': '#064e3b'},
+                    {'range': [25, 50], 'color': '#78350f'},
+                    {'range': [50, 100], 'color': '#7f1d1d'}
+                ],
+            }
+        ))
+        fig_gauge.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font={'color': "#F3F4F6", 'family': "Inter"},
+            height=280,
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+        st.plotly_chart(fig_gauge, use_container_width=True)
+        
+        # Risk Badge and Recommendation
+        if prediction_prob > 0.5:
+            st.error("🚨 **Classification: HIGH RISK OF CHURN**")
+            risk_color = "red"
+        elif prediction_prob > 0.25:
+            st.warning("⚠️ **Classification: MEDIUM RISK OF CHURN**")
+            risk_color = "orange"
+        else:
+            st.success("✅ **Classification: LOW RISK OF CHURN (Healthy)**")
+            risk_color = "green"
             
-            recs = []
-            if input_data['Contract'] == 'Month-to-month':
-                recs.append("🔴 **Month-to-month Contract**: This is the strongest driver of churn. *Recommendation: Offer a 10% discount on a 1-year contract conversion.*")
-            if input_data['InternetService'] == 'Fiber optic':
-                recs.append("🟡 **Fiber Optic Service**: Fiber optic users show higher churn due to price sensitivity. *Recommendation: Offer a bundled value addon (e.g. streaming or cloud backup) or check for service issues.*")
-            if input_data['tenure'] < 6:
-                recs.append("🔴 **New Customer Onboarding Phase**: Customer is in high-risk early tenure (<6 months). *Recommendation: Schedule a proactive check-in call or onboarding support.*")
-            if input_data['TechSupport'] == 'No' and input_data['InternetService'] != 'No':
-                recs.append("🟡 **No Tech Support**: Lack of tech support is strongly associated with churn. *Recommendation: Promote free trial or discount on Tech Support addon.*")
-            if input_data['OnlineSecurity'] == 'No' and input_data['InternetService'] != 'No':
-                recs.append("🟡 **No Online Security**: Security features bind customers longer. *Recommendation: Offer a basic Online Security package.*")
-            
-            if len(recs) == 0:
-                st.write("This customer has a stable profile (long tenure, long-term contract, multiple security features). Keep up standard maintenance!")
-            else:
-                for rec in recs:
-                    st.markdown(rec)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Risk Explanations Card
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("💡 Key Risk Factors & Recommendations")
+        
+        recs = []
+        if input_data['Contract'] == 'Month-to-month':
+            recs.append("🔴 **Month-to-month Contract**: This is the strongest driver of churn. *Recommendation: Offer a 10% discount on a 1-year contract conversion.*")
+        if input_data['InternetService'] == 'Fiber optic':
+            recs.append("🟡 **Fiber Optic Service**: Fiber optic users show higher churn due to price sensitivity. *Recommendation: Offer a bundled value addon (e.g. streaming or cloud backup) or check for service issues.*")
+        if input_data['tenure'] < 6:
+            recs.append("🔴 **New Customer Onboarding Phase**: Customer is in high-risk early tenure (<6 months). *Recommendation: Schedule a proactive check-in call or onboarding support.*")
+        if input_data['TechSupport'] == 'No' and input_data['InternetService'] != 'No':
+            recs.append("🟡 **No Tech Support**: Lack of tech support is strongly associated with churn. *Recommendation: Promote free trial or discount on Tech Support addon.*")
+        if input_data['OnlineSecurity'] == 'No' and input_data['InternetService'] != 'No':
+            recs.append("🟡 **No Online Security**: Security features bind customers longer. *Recommendation: Offer a basic Online Security package.*")
+        
+        if len(recs) == 0:
+            st.write("This customer has a stable profile (long tenure, long-term contract, multiple security features). Keep up standard maintenance!")
+        else:
+            for rec in recs:
+                st.markdown(rec)
+        st.markdown("</div>", unsafe_allow_html=True)
         
     with col2:
-        with st.container(border=True):
-            st.subheader("📊 Customer Feature Comparison")
-            st.write("Comparing this customer's parameters against the average active and churned customers in the dataset.")
-            
-            df_churned = df[df['Churn'] == 'Yes']
-            df_retained = df[df['Churn'] == 'No']
-            
-            comp_df = pd.DataFrame({
-                'Metric': ['Tenure (Months)', 'Monthly Charges ($)', 'Total Charges ($)'],
-                'Selected Customer': [input_data['tenure'], input_data['MonthlyCharges'], input_data['TotalCharges']],
-                'Avg Churned Customer': [df_churned['tenure'].mean(), df_churned['MonthlyCharges'].mean(), df_churned['TotalCharges'].mean()],
-                'Avg Active Customer': [df_retained['tenure'].mean(), df_retained['MonthlyCharges'].mean(), df_retained['TotalCharges'].mean()]
-            })
-            
-            comp_melt = pd.melt(comp_df, id_vars=['Metric'], value_vars=['Selected Customer', 'Avg Churned Customer', 'Avg Active Customer'],
-                                var_name='Group', value_name='Value')
-            
-            fig_comp = px.bar(
-                comp_melt,
-                x='Metric',
-                y='Value',
-                color='Group',
-                barmode='group',
-                color_discrete_map={
-                    'Selected Customer': '#3B82F6',
-                    'Avg Churned Customer': '#EF4444',
-                    'Avg Active Customer': '#10B981'
-                },
-                template="plotly_dark"
-            )
-            
-            fig_comp.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                margin=dict(l=10, r=10, t=10, b=10),
-                height=300
-            )
-            st.plotly_chart(fig_comp, use_container_width=True)
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("📊 Customer Feature Comparison")
+        st.write("Comparing this customer's parameters against the average active and churned customers in the dataset.")
         
-        with st.container(border=True):
-            st.subheader("📋 Customer Details Snapshot")
-            snap_cols = st.columns(3)
-            with snap_cols[0]:
-                st.markdown(f"**Contract:**\n{input_data['Contract']}")
-                st.markdown(f"**Internet:**\n{input_data['InternetService']}")
-            with snap_cols[1]:
-                st.markdown(f"**Payment:**\n{input_data['PaymentMethod']}")
-                st.markdown(f"**Tech Support:**\n{input_data['TechSupport']}")
-            with snap_cols[2]:
-                st.markdown(f"**Paperless Bill:**\n{input_data['PaperlessBilling']}")
-                st.markdown(f"**Security Addon:**\n{input_data['OnlineSecurity']}")
+        # Sub-dataframes for comparisons
+        df_churned = df[df['Churn'] == 'Yes']
+        df_retained = df[df['Churn'] == 'No']
+        
+        comp_df = pd.DataFrame({
+            'Metric': ['Tenure (Months)', 'Monthly Charges ($)', 'Total Charges ($)'],
+            'Selected Customer': [input_data['tenure'], input_data['MonthlyCharges'], input_data['TotalCharges']],
+            'Avg Churned Customer': [df_churned['tenure'].mean(), df_churned['MonthlyCharges'].mean(), df_churned['TotalCharges'].mean()],
+            'Avg Active Customer': [df_retained['tenure'].mean(), df_retained['MonthlyCharges'].mean(), df_retained['TotalCharges'].mean()]
+        })
+        
+        # Melt the dataframe for plotly plotting
+        comp_melt = pd.melt(comp_df, id_vars=['Metric'], value_vars=['Selected Customer', 'Avg Churned Customer', 'Avg Active Customer'],
+                            var_name='Group', value_name='Value')
+        
+        # Render a bar chart of comparison metrics
+        fig_comp = px.bar(
+            comp_melt,
+            x='Metric',
+            y='Value',
+            color='Group',
+            barmode='group',
+            color_discrete_map={
+                'Selected Customer': '#3B82F6',
+                'Avg Churned Customer': '#EF4444',
+                'Avg Active Customer': '#10B981'
+            },
+            template="plotly_dark"
+        )
+        
+        fig_comp.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            margin=dict(l=10, r=10, t=10, b=10),
+            height=300
+        )
+        st.plotly_chart(fig_comp, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Quick summary breakdown
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("📋 Customer Details Snapshot")
+        snap_cols = st.columns(3)
+        with snap_cols[0]:
+            st.markdown(f"**Contract:**\n{input_data['Contract']}")
+            st.markdown(f"**Internet:**\n{input_data['InternetService']}")
+        with snap_cols[1]:
+            st.markdown(f"**Payment:**\n{input_data['PaymentMethod']}")
+            st.markdown(f"**Tech Support:**\n{input_data['TechSupport']}")
+        with snap_cols[2]:
+            st.markdown(f"**Paperless Bill:**\n{input_data['PaperlessBilling']}")
+            st.markdown(f"**Security Addon:**\n{input_data['OnlineSecurity']}")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ----------------- TAB 2: GLOBAL ANALYTICS -----------------
 with tab2:
@@ -373,118 +334,126 @@ with tab2:
     col_feat1, col_feat2 = st.columns([1, 1])
     
     with col_feat1:
-        with st.container(border=True):
-            st.subheader("🧠 Model-Derived Feature Importance")
-            st.write("Top factors that the machine learning algorithm uses to distinguish churned vs. retained subscribers.")
-            
-            feat_df = pd.DataFrame(feature_importance)
-            feat_df['Feature_Clean'] = feat_df['Feature'].apply(lambda x: 
-                x.replace('Contract_', 'Contract: ')
-                 .replace('InternetService_', 'Internet: ')
-                 .replace('PaymentMethod_', 'Payment: ')
-                 .replace('OnlineSecurity_', 'Security: ')
-                 .replace('TechSupport_', 'Support: ')
-                 .replace('_', ' ')
-            )
-            
-            fig_feat = px.bar(
-                feat_df.head(10),
-                x='Importance',
-                y='Feature_Clean',
-                orientation='h',
-                color='Importance',
-                color_continuous_scale='Blues',
-                template='plotly_dark'
-            )
-            fig_feat.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                yaxis=dict(autorange="reversed"),
-                coloraxis_showscale=False,
-                height=300,
-                margin=dict(l=10, r=10, t=10, b=10)
-            )
-            st.plotly_chart(fig_feat, use_container_width=True)
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("🧠 Model-Derived Feature Importance")
+        st.write("Top factors that the machine learning algorithm uses to distinguish churned vs. retained subscribers.")
+        
+        # Process feature importance data
+        feat_df = pd.DataFrame(feature_importance)
+        
+        # Map feature names to user-friendly titles
+        feat_df['Feature_Clean'] = feat_df['Feature'].apply(lambda x: 
+            x.replace('Contract_', 'Contract: ')
+             .replace('InternetService_', 'Internet: ')
+             .replace('PaymentMethod_', 'Payment: ')
+             .replace('OnlineSecurity_', 'Security: ')
+             .replace('TechSupport_', 'Support: ')
+             .replace('_', ' ')
+        )
+        
+        fig_feat = px.bar(
+            feat_df.head(10),
+            x='Importance',
+            y='Feature_Clean',
+            orientation='h',
+            color='Importance',
+            color_continuous_scale='Blues',
+            template='plotly_dark'
+        )
+        fig_feat.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            yaxis=dict(autorange="reversed"),
+            coloraxis_showscale=False,
+            height=300,
+            margin=dict(l=10, r=10, t=10, b=10)
+        )
+        st.plotly_chart(fig_feat, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         
     with col_feat2:
-        with st.container(border=True):
-            st.subheader("📅 Churn Rate by Contract Type")
-            st.write("Contract model has a massive impact. Month-to-month contracts are highly volatile.")
-            
-            contract_churn = df.groupby('Contract')['Churn'].value_counts(normalize=True).unstack() * 100
-            contract_churn = contract_churn.reset_index()
-            
-            fig_contract = px.bar(
-                contract_churn,
-                x='Contract',
-                y='Yes',
-                text=contract_churn['Yes'].apply(lambda x: f"{x:.1f}%"),
-                color='Contract',
-                color_discrete_sequence=['#EF4444', '#F59E0B', '#10B981'],
-                template='plotly_dark',
-                labels={'Yes': 'Churn Rate (%)'}
-            )
-            fig_contract.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                showlegend=False,
-                height=300,
-                margin=dict(l=10, r=10, t=10, b=10)
-            )
-            st.plotly_chart(fig_contract, use_container_width=True)
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("📅 Churn Rate by Contract Type")
+        st.write("Contract model has a massive impact. Month-to-month contracts are highly volatile.")
+        
+        contract_churn = df.groupby('Contract')['Churn'].value_counts(normalize=True).unstack() * 100
+        contract_churn = contract_churn.reset_index()
+        
+        fig_contract = px.bar(
+            contract_churn,
+            x='Contract',
+            y='Yes',
+            text=contract_churn['Yes'].apply(lambda x: f"{x:.1f}%"),
+            color='Contract',
+            color_discrete_sequence=['#EF4444', '#F59E0B', '#10B981'],
+            template='plotly_dark',
+            labels={'Yes': 'Churn Rate (%)'}
+        )
+        fig_contract.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
+            height=300,
+            margin=dict(l=10, r=10, t=10, b=10)
+        )
+        st.plotly_chart(fig_contract, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         
     col_chart3, col_chart4 = st.columns([1.2, 1])
     
     with col_chart3:
-        with st.container(border=True):
-            st.subheader("💵 Monthly Charges & Tenure Density Analysis")
-            st.write("A scatter view of active vs churned customers showing high concentration of churn at early tenure and higher charges.")
-            
-            fig_scatter = px.scatter(
-                df,
-                x="tenure",
-                y="MonthlyCharges",
-                color="Churn",
-                color_discrete_map={"Yes": "#EF4444", "No": "#10B981"},
-                opacity=0.35,
-                labels={"tenure": "Tenure (Months)", "MonthlyCharges": "Monthly Charges ($)"},
-                template='plotly_dark'
-            )
-            fig_scatter.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                height=320,
-                margin=dict(l=10, r=10, t=10, b=10)
-            )
-            st.plotly_chart(fig_scatter, use_container_width=True)
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("💵 Monthly Charges & Tenure Density Analysis")
+        st.write("A scatter view of active vs churned customers showing high concentration of churn at early tenure and higher charges.")
+        
+        # Sample for plotting speed if needed, but 7000 rows works fine in Plotly
+        fig_scatter = px.scatter(
+            df,
+            x="tenure",
+            y="MonthlyCharges",
+            color="Churn",
+            color_discrete_map={"Yes": "#EF4444", "No": "#10B981"},
+            opacity=0.35,
+            labels={"tenure": "Tenure (Months)", "MonthlyCharges": "Monthly Charges ($)"},
+            template='plotly_dark'
+        )
+        fig_scatter.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            height=320,
+            margin=dict(l=10, r=10, t=10, b=10)
+        )
+        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         
     with col_chart4:
-        with st.container(border=True):
-            st.subheader("🌐 Churn by Internet Service Provider")
-            st.write("Fiber Optic customers churn at a significantly higher rate than DSL or No-Internet users.")
-            
-            internet_churn = df.groupby('InternetService')['Churn'].value_counts(normalize=True).unstack() * 100
-            internet_churn = internet_churn.reset_index()
-            
-            fig_internet = px.bar(
-                internet_churn,
-                x='InternetService',
-                y='Yes',
-                text=internet_churn['Yes'].apply(lambda x: f"{x:.1f}%"),
-                color='InternetService',
-                color_discrete_sequence=['#FF7F50', '#87CEFA', '#32CD32'],
-                template='plotly_dark',
-                labels={'Yes': 'Churn Rate (%)'}
-            )
-            fig_internet.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                showlegend=False,
-                height=320,
-                margin=dict(l=10, r=10, t=10, b=10)
-            )
-            st.plotly_chart(fig_internet, use_container_width=True)
+        st.markdown("<div class='dashboard-card'>", unsafe_allow_html=True)
+        st.subheader("🌐 Churn by Internet Service Provider")
+        st.write("Fiber Optic customers churn at a significantly higher rate than DSL or No-Internet users.")
+        
+        internet_churn = df.groupby('InternetService')['Churn'].value_counts(normalize=True).unstack() * 100
+        internet_churn = internet_churn.reset_index()
+        
+        fig_internet = px.bar(
+            internet_churn,
+            x='InternetService',
+            y='Yes',
+            text=internet_churn['Yes'].apply(lambda x: f"{x:.1f}%"),
+            color='InternetService',
+            color_discrete_sequence=['#FF7F50', '#87CEFA', '#32CD32'],
+            template='plotly_dark',
+            labels={'Yes': 'Churn Rate (%)'}
+        )
+        fig_internet.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
+            height=320,
+            margin=dict(l=10, r=10, t=10, b=10)
+        )
+        st.plotly_chart(fig_internet, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer info
 st.markdown("---")
